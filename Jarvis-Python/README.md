@@ -1,0 +1,2 @@
+# Jarvis
+ Bringing all my iron man fascinations come true tried hands on building a jarvis programme from the iron man movie, using simple python with speech recognition package. Here jarvis can do google search for you, get info from wikipedia, play youtube videos, music and even send emails on your command a simple AI secretary, next I'll be working on sending whatsapp messages with the help of jarvis
