@@ -1,153 +1,161 @@
-<!DOCTYPE html>
-<html>
-<head>
-	<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
-	<title></title>
-	<meta name="generator" content="LibreOffice 7.3.6.2 (Linux)"/>
-	<meta name="created" content="00:00:00"/>
-	<meta name="changed" content="00:00:00"/>
-	<style type="text/css">
-		@page { size: 8.5in 11in; margin: 0.79in }
-		p { line-height: 115%; margin-bottom: 0.1in; background: transparent }
-		pre { font-family: "Liberation Mono", monospace; font-size: 10pt; background: transparent }
-	</style>
-</head>
-<body lang="en-US" link="#000080" vlink="#800000" dir="ltr"><pre>from gtts import gTTS
-import speech_recognition as sr
-import os
-import re
-import webbrowser
-import smtplib
-import requests
-from weather import Weather
+<?php 
+    $stturl = "https://www.google.com/speech-api/v1/recognize?xjerr=1&client=chromium&lang=en-US";
+    $wolframurl = "http://api.wolframalpha.com/v2/query?appid=<YOUR WOLFRAM APP ID>&format=plaintext&podtitle=Result&input=";
+    $trueknowledgeurl = "https://api.trueknowledge.com/direct_answer/?api_account_id=<YOUR TRUE KNOWLEDGE API USERNAME>&api_password=<YOUR TRUE KNOWLEDGE API PASSWORD>&question=";
+    $ttsurl = "http://translate.google.com/translate_tts?tl=en&q=";
+    $arduinowebserver1 = "192.168.1.177";
 
-def talkToMe(audio):
-    &quot;speaks audio passed as argument&quot;
+    if(isset($_GET['speechinput'])){
 
-    print(audio)
-    for line in audio.splitlines():
-        os.system(&quot;say &quot; + audio)
+/*
+        // Google Speech to Text
 
-    #  use the system's inbuilt say command instead of mpg123
-    #  text_to_speech = gTTS(text=audio, lang='en')
-    #  text_to_speech.save('audio.mp3')
-    #  os.system('mpg123 audio.mp3')
-
-
-def myCommand():
-    &quot;listens for commands&quot;
-
-    r = sr.Recognizer()
-
-    with sr.Microphone() as source:
-        print('Ready...')
-        r.pause_threshold = 1
-        r.adjust_for_ambient_noise(source, duration=1)
-        audio = r.listen(source)
-
-    try:
-        command = r.recognize_google(audio).lower()
-        print('You said: ' + command + '\n')
-
-    #loop back to continue to listen for commands if unrecognizable speech is received
-    except sr.UnknownValueError:
-        print('Your last command couldn\'t be heard')
-        command = myCommand();
-
-    return command
+        $filename = "./test1.flac";
+        $upload = file_get_contents($filename);
+        $data = array(
+            "Content_Type"  =>  "audio/x-flac; rate=16000",
+            "Content"       =>  $upload,
+        );
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $stturl);
+        //curl_setopt($ch, CURLOPT_USERAGENT, $useragent);
+        //curl_setopt($ch, CURLOPT_INTERFACE, "127.0.0.1");
+        curl_setopt( $ch, CURLOPT_HTTPHEADER, array("Content-Type: audio/x-flac; rate=16000"));
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+        ob_start();
+        curl_exec($ch);
+        curl_close($ch);
+        $contents = ob_get_contents();
+        ob_end_clean();
+        //echo $contents;
+        $textarray = (json_decode($contents,true));
+        $text = $textarray['hypotheses']['0']['utterance'];
+        //echo $text;
+*/
+        $text = $_GET['speechinput'];
 
 
-def assistant(command):
-    &quot;if statements for executing commands&quot;
+        if(stripos($text,"turn")!==FALSE){
+            // Home Control API
+            // Handle stuff here
+            if(stripos($text,"light")!==FALSE){
+                $url = $arduinowebserver1."/?dev=light";
+                if(stripos($text," on")!==FALSE){
+                    $url .= "&cmd=on";
+                }
+                else{
+                    $url .= "&cmd=off";
+                }
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $url);
+                ob_start();
+                curl_exec($ch);
+                curl_close($ch);
+                ob_end_clean();
+            }
+            $search = array("turn","my");
+            $replace = array("turned","your");
+            $responsetext = str_ireplace($search,$replace,$text);
+            $answer = "Yes, I ".$responsetext;
+        }
+        elseif(stripos($text,"temperature")!==FALSE && stripos($text,"house")!==FALSE){
+            // Get Home Temperature
+            $url = $arduinowebserver1."/?dev=temperature";
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            ob_start();
+            curl_exec($ch);
+            curl_close($ch);
+            $answer = ob_get_contents();
+            ob_end_clean();
+        }
+        else{
+            // True Knowledge API
 
-    if 'open reddit' in command:
-        reg_ex = re.search('open reddit (.*)', command)
-        url = 'https://www.reddit.com/'
-        if reg_ex:
-            subreddit = reg_ex.group(1)
-            url = url + 'r/' + subreddit
-        webbrowser.open(url)
-        print('Done!')
-
-    elif 'open website' in command:
-        reg_ex = re.search('open website (.+)', command)
-        if reg_ex:
-            domain = reg_ex.group(1)
-            url = 'https://www.' + domain
-            webbrowser.open(url)
-            print('Done!')
-        else:
-            pass
-
-    elif 'what\'s up' in command:
-        talkToMe('Just doing my thing')
-    elif 'joke' in command:
-        res = requests.get(
-                'https://icanhazdadjoke.com/',
-                headers={&quot;Accept&quot;:&quot;application/json&quot;}
-                )
-        if res.status_code == requests.codes.ok:
-            talkToMe(str(res.json()['joke']))
-        else:
-            talkToMe('oops!I ran out of jokes')
-
-    elif 'current weather in' in command:
-        reg_ex = re.search('current weather in (.*)', command)
-        if reg_ex:
-            city = reg_ex.group(1)
-            weather = Weather()
-            location = weather.lookup_by_location(city)
-            condition = location.condition()
-            talkToMe('The Current weather in %s is %s The temperature is %.1f degree' % (city, condition.text(), (int(condition.temp())-32)/1.8))
-
-    elif 'weather forecast in' in command:
-        reg_ex = re.search('weather forecast in (.*)', command)
-        if reg_ex:
-            city = reg_ex.group(1)
-            weather = Weather()
-            location = weather.lookup_by_location(city)
-            forecasts = location.forecast()
-            for i in range(0,3):
-                talkToMe('On %s will it %s. The maximum temperture will be %.1f degree.'
-                         'The lowest temperature will be %.1f degrees.' % (forecasts[i].date(), forecasts[i].text(), (int(forecasts[i].high())-32)/1.8, (int(forecasts[i].low())-32)/1.8))
-
-
-    elif 'email' in command:
-        talkToMe('Who is the recipient?')
-        recipient = myCommand()
-
-        if 'Mithun' in recipient:
-            talkToMe('What should I say?')
-            content = myCommand()
-
-            #init gmail SMTP
-            mail = smtplib.SMTP('smtp.gmail.com', 587)
-
-            #identify to server
-            mail.ehlo()
-
-            #encrypt session
-            mail.starttls()
-
-            #login
-            mail.login('username', 'password')
-
-            #send message
-            mail.sendmail('Mithun', 'mitbusiness15@gmail.com', content)
-
-            #end mail connection
-            mail.close()
-
-            talkToMe('Email sent.')
-
-        else:
-            talkToMe('I don\'t know what you mean!')
+            $trueknowledgeurl .= urlencode($text);
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $trueknowledgeurl);
+            ob_start();
+            curl_exec($ch);
+            curl_close($ch);
+            $contents = ob_get_contents();
+            ob_end_clean();
+            //echo $contents;
+            $contents = str_replace("tk:","tk_",$contents); // simplexml doesn't seem to like colons
+            $obj = new SimpleXMLElement($contents);
+            if($answer = $obj->tk_text_result){
+                //$answer = "master cranky, ".$answer;
+            }
+            else{
+                //$answer = $obj->tk_error_message;
 
 
-talkToMe('I am ready for your command')
+                // Wolfram Alpha API
 
-#loop to continue executing multiple commands
-while True:
-    assistant(myCommand())</pre>
-</body>
-</html>
+                $wolframurl .= urlencode($text);
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $wolframurl);
+                ob_start();
+                curl_exec($ch);
+                curl_close($ch);
+                $contents = ob_get_contents();
+                ob_end_clean();
+                //echo $contents;
+                $obj = new SimpleXMLElement($contents);
+                $answer = $obj->pod->subpod->plaintext;
+                if(strlen($answer)){
+                    //$answer = "master cranky, ".$answer;
+                }
+                else{
+                    $answer = "sorry, I don't understand";
+                }
+            }
+            //echo $answer;
+        }
+
+
+
+        // Google Text to Speech
+
+        $ttsurl .= urlencode($answer);
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $ttsurl);
+        ob_start();
+        curl_exec($ch);
+        curl_close($ch);
+        $contents = ob_get_contents();
+        ob_end_clean();
+        //header('Content-Disposition: attachment; filename="response.mp3"');
+        //header("Content-Transfer-Encoding: binary"); 
+        //header("Content-Type: audio/mpeg, audio/x-mpeg, audio/x-mpeg-3, audio/mpeg3");
+        header('Content-Type: audio/mpeg');
+        header('Cache-Control: no-cache');
+        print $contents;
+    }
+    else{
+        ?>
+        <html>
+            <head>
+                <title>.: Jarvis :.</title>
+                <script>
+                    function submitandclear(){
+                        if(document.getElementById('speechinput').value != ""){
+                            document.jarvisform.submit();
+                            document.getElementById('speechinput').value = "";
+                        }
+                    }
+
+
+                </script>
+            </head>
+            <body>
+                <form method="get" name="jarvisform" id="jarvisform" action="<?=$_SERVER['PHP_SELF']?>" target="voiceframe">
+                    <input name="speechinput" id="speechinput" type="text" onFocus="submitandclear(this);" style="width:20px;" x-webkit-speech /><!--input type="submit" value="ASK" /-->
+                </form>
+                <iframe width="0px" height="0px" style="border:0px;" src="about:none" name="voiceframe"></iframe>
+            </body>
+        </html>
+        <?
+    }
+?>
