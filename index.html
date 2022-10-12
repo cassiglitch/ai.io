@@ -1,11 +1,22 @@
+$ npm i get-all-files
+import { getAllFiles, getAllFilesSync } from 'get-all-files'
 
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Sample Code</title>
-</head>
- <body>
-    <h1>Opening a folder from HTML code</h1>
-    <a href="Jarvis-Python">Click to open a folder</a>
-</body>
-</html>
+// Lazily iterate over filenames asynchronously
+for await (const filename of getAllFiles(`path/to/dir/or/file`)) {
+  // Could break early on some condition and get-all-files
+  // won't have unnecessarily accumulated the filenames in an array
+  console.log(filename)
+}
+
+// Get array of filenames asynchronously
+console.log(await getAllFiles(`path/to/dir/or/file`).toArray())
+
+// Lazily iterate over filenames synchronously
+for (const filename of getAllFilesSync(`path/to/dir/or/file`)) {
+  // Could break early on some condition and get-all-files
+  // won't have unnecessarily accumulated the filenames in an array
+  console.log(filename)
+}
+
+// Get array of filenames synchronously
+console.log(getAllFilesSync(`path/to/dir/or/file`).toArray())
