@@ -1,0 +1,35 @@
+
+<!DOCTYPE html>
+<html>
+<textarea id="sourceText"></textarea>
+<textarea id="resultText"></textarea>
+<br>
+<input id="button" type="button" value="Translate" />
+
+ <script
+    src="https://code.jquery.com/jquery-3.4.0.min.js"
+    integrity="sha256-BJeo0qm959uMBGb65z40ejJYGSgR7REI4+CW1fNKwOg="
+    crossorigin="anonymous"></script>
+<script>
+
+$('#button').click(function(){translate();});
+
+function translate(){
+  
+  var sourceText = $('textarea#sourceText').val();
+  var sourceLang = 'en';
+  var targetLang = 'es';
+  console.log(sourceText);
+  
+  var url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl="+ sourceLang + "&tl=" + targetLang + "&dt=t&q=" + encodeURI(sourceText);
+  //console.log(url);
+  
+  $.getJSON(url, function(data) {
+      $('textarea#resultText').val(data[0][0][0]);
+    });
+
+}
+
+
+</script>
+</html>
